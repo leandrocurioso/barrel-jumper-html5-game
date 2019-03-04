@@ -1,0 +1,50 @@
+{
+  "name": "barrel-jumper-html5-game",
+  "version": "1.0.0",
+  "description": "A simple Mario style platform barrel jumper game.",
+  "keywords": [
+    "barrel-jumper-html5-game",
+    "phaser-webpack",
+    "Phaser3-webpack"
+  ],
+  "devDependencies": {
+    "@babel/core": "7.2.2",
+    "@babel/plugin-proposal-object-rest-spread": "7.2.0",
+    "@babel/preset-env": "7.2.3",
+    "babel-loader": "8.0.5",
+    "concurrently": "4.1.0",
+    "expose-loader": "0.7.5",
+    "gulp": "3.9.1",
+    "gulp-concat": "2.6.1",
+    "gulp-minify-css": "1.2.4",
+    "gulp-sourcemaps": "2.6.4",
+    "gulp-watch": "5.0.1",
+    "terser-webpack-plugin": "1.2.1",
+    "webpack": "4.25.1",
+    "webpack-cli": "3.1.2",
+    "webpack-dev-server": "3.1.10"
+  },
+  "dependencies": {
+    "phaser": "3.15.1"
+  },
+  "scripts": {
+    "watch": "./node_modules/.bin/concurrently \"npm run webpack:watch\" \"npm run gulp:watch-minify-css\"",
+    "build": "./node_modules/.bin/webpack --mode production && npm run gulp:minify-css",
+    "webpack:watch": "./node_modules/.bin/webpack --mode development && webpack-dev-server --mode development",
+    "gulp:minify-css": "./node_modules/.bin/gulp minify-css",
+    "gulp:watch-minify-css": "./node_modules/.bin/gulp watch-minify-css"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandrocurioso/barrel-jumper-html5-game.git"
+  },
+  "author": {
+    "name": "leandrocurioso",
+    "email": "leandro.curioso@gmail.com"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/leandrocurioso/barrel-jumper-html5-game/issues"
+  },
+  "homepage": "https://github.com/leandrocurioso/barrel-jumper-html5-game#readme"
+}
