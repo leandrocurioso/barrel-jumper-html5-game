@@ -1,7 +1,4 @@
 import Phaser from "phaser";
-import { BootScene } from "../scene/boot.scene";
-import { LoadingScene } from "../scene/loading.scene";
-import { HomeScene } from "../scene/home.scene";
 import { MainScene } from "../scene/main.scene";
 
 export default {
@@ -11,11 +8,15 @@ export default {
     title: "Barrel Jumper",
     parent: "game",
     scene: [
-      BootScene,
-      LoadingScene,
-      HomeScene,
       MainScene
     ],
     pixelArt: false,
-    backgroundColor: "#FFFFFF"
+    backgroundColor: "#000000",
+    physics: {
+      default: 'arcade',
+      arcade: {
+        gravity: { y: 1000 },
+        debug: true
+      }
+    }
 };;
