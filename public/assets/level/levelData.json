@@ -1,4 +1,13 @@
 {
+  "world": {
+    "width":360,
+    "height": 700
+  },
+  "spawner": {
+    "interval": 2000,
+    "spped": 80,
+    "lifesoan": 40000
+  },
    "player": {
      "x": 300,
      "y": 538

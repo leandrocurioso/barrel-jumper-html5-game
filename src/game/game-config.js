@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { MainScene } from "../scene/main.scene";
+import VirtualJoyStickPlugin from "../plugin/rex-virtual-joystick-plugin";
 
 export default {
     width: 360,
@@ -18,5 +19,12 @@ export default {
         gravity: { y: 1000 },
         debug: false
       }
-    }
+    },
+    plugins: {
+      global: [{
+          key: 'virtual-joystick-plugin',
+          plugin: VirtualJoyStickPlugin,
+          start: true
+      }]
+  }
 };;

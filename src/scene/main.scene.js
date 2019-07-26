@@ -1,5 +1,4 @@
 import { Scene } from "./scene";
-import VirtualJoyStickPlugin from "../plugin/rex-virtual-joystick-plugin";
 
 export class MainScene extends Scene {
 
@@ -19,6 +18,8 @@ export class MainScene extends Scene {
       enabled: true
     };
     this.jumpDirections = ["up", "upleft", "upright" ]; 
+    this.barrelSoundPlayed = false;
+    this.winningSoundPlayed = false;
   }
 
   preload() {
@@ -27,11 +28,14 @@ export class MainScene extends Scene {
     this.load.image("block", "./assets/image/block.png");
     this.load.image("goal", "./assets/image/gorilla.png");
     this.load.image("barrel", "./assets/image/barrel.png");
-    this.load.audio("background", "./assets/audio/background.mp3", {
-      loop: true
-    });
+    this.load.audio("background", "./assets/audio/background.mp3");
     this.load.audio("walking", "./assets/audio/walking.mp3");
+    this.load.audio("burning", "./assets/audio/burning.mp3");
     this.load.audio("jump", "./assets/audio/jump.mp3");
+    this.load.audio("barrel", "./assets/audio/barrel.mp3");
+    this.load.audio("collision", "./assets/audio/collision.mp3");
+    this.load.audio("winning", "./assets/audio/winning.mp3");
+
     this.load.spritesheet("player", "./assets/image/player_spritesheet.png", {
         frameWidth: 28,
         frameHeight: 30,
@@ -47,56 +51,89 @@ export class MainScene extends Scene {
     });
     this.load.image('base', './assets/image/base.png');
     this.load.image('thumb', './assets/image/thumb.png');
-    this.load.plugin('rex-virtual-joystick-plugin"', VirtualJoyStickPlugin, true);
     this.load.json('levelData', './assets/level/levelData.json');
-
   }
 
   create() {
-    this.backgroundMusic = this.sound.add("background", {
-      loop: true
-    });
+    if (!this.backgroundMusic) {
+      this.backgroundMusic = this.sound.add("background", {
+        loop: true
+      });
+    }
+
     this.walkingSound = this.sound.add("walking");
+    this.burningSound = this.sound.add("burning");
+    this.barrelSound = this.sound.add("barrel");
     this.jumpSound = this.sound.add("jump");
-    this.backgroundMusic.play();
+    this.barrelCollisionSound = this.sound.add("collision");
+    this.winningSound = this.sound.add("winning");
+
+    if (!this.backgroundMusic.isPlaying) {
+      this.backgroundMusic.play();
+    }
     // walking animation
-    this.anims.create({
-      key: 'walking',
-      frames: this.anims.generateFrameNames('player', {
-        frames: [0, 1, 2]
-      }),
-      frameRate: 12,
-      yoyo: true,
-      repeat: -1
-    });
+    if (!this.anims.get('walking')) {
+      this.anims.create({
+        key: 'walking',
+        frames: this.anims.generateFrameNames('player', {
+          frames: [0, 1, 2]
+        }),
+        frameRate: 12,
+        yoyo: true,
+        repeat: -1
+      });
+    }
+
 
     // fire animation
-    this.anims.create({
-      key: 'burning',
-      frames: this.anims.generateFrameNames('fire', {
-        frames: [0, 1]
-      }),
-      frameRate: 4,
-      repeat: -1
-    });
+    if (!this.anims.get('burning')) {
+      this.anims.create({
+        key: 'burning',
+        frames: this.anims.generateFrameNames('fire', {
+          frames: [0, 1]
+        }),
+        frameRate: 4,
+        repeat: -1
+      });
+    }
 
-    // world bounds
-    this.physics.world.bounds.width = 360;
-    this.physics.world.bounds.height = 700;
-
+    // Create virtual joystick
     this.createVirtualJoystick();
 
     // add all level elements
     this.setupLevel();
 
-    // collision detection
-    this.physics.add.collider(this.player, this.platforms);
-    this.physics.add.collider(this.goal, this.platforms);
+    // setup barrels
+    this.setupBarrels();
 
-    // enable cursor keys
-    this.input.on('pointerdown', function(pointer) {
-      console.log(pointer.x, pointer.y);
-    });
+    // collision detection
+    this.physics.add.collider([this.player, this.goal,  this.barrels], this.platforms);
+    
+    // overlap
+    this.physics.add.overlap(this.player, [this.fires, this.goal,  this.barrels], this.restartGame, null, this);
+    
+  }
+
+  restartGame(sourceTarget, colliderTarget) {
+    if (!this.burningSound.isPlaying && colliderTarget.texture.key === 'fire') {
+      this.burningSound.play();
+    }
+
+    if (!this.barrelSoundPlayed && !this.barrelCollisionSound.isPlaying && colliderTarget.texture.key === 'barrel') {
+      this.barrelCollisionSound.play();
+      this.barrelSoundPlayed = true;
+    }
+
+    if (!this.winningSoundPlayed && !this.winningSound.isPlaying && colliderTarget.texture.key === 'goal') {
+      this.winningSound.play();
+      this.winningSoundPlayed = true;
+    }
+
+    this.winningSound
+    this.cameras.main.fade(600);
+    this.cameras.main.on("camerafadeoutcomplete", () => {
+      this.scene.restart();
+    }, this);
   }
 
   updateJoystickState() {
@@ -134,7 +171,7 @@ export class MainScene extends Scene {
     // Handle the player moving
     this.userInput();
     this.handleJump();
-}
+  }
 
   userInput() {
     if (this.isTouchingGround && !this.walkingSound.isPlaying) {
@@ -173,8 +210,12 @@ export class MainScene extends Scene {
     // load json data
     this.levelData = this.cache.json.get('levelData');
 
+    // world bounds
+    this.physics.world.bounds.width = this.levelData.world.width;
+    this.physics.world.bounds.height = this.levelData.world.height;
+
     // create all the platforms
-    this.platforms = this.add.group();
+    this.platforms = this.physics.add.staticGroup();
     for (let i = 0; i < this.levelData.platforms.length; i++) {
       let curr = this.levelData.platforms[i];
 
@@ -201,7 +242,10 @@ export class MainScene extends Scene {
     }
 
     // create all the fire
-    this.fires = this.add.group();
+    this.fires = this.physics.add.group({
+      allowGravity: false,
+      immovable: true
+    });
     for (let i = 0; i < this.levelData.fires.length; i++) {
       let curr = this.levelData.fires[i];
 
@@ -218,17 +262,7 @@ export class MainScene extends Scene {
       // add to the group
       this.fires.add(newObj);
 
-      // this is for level creation
-      newObj.setInteractive();
-      this.input.setDraggable(newObj);
     }
-
-    // for level creation
-    this.input.on('drag', function(pointer, gameObject, dragX, dragY){
-      gameObject.x = dragX;
-      gameObject.y = dragY;
-      console.log(dragX, dragY);
-    });
 
     // player
     this.player = this.add.sprite(this.levelData.player.x, this.levelData.player.y, 'player', 3);
@@ -237,18 +271,19 @@ export class MainScene extends Scene {
     // constraint player to the game bounds
     this.player.body.setCollideWorldBounds(true);
 
+    // follow camera
+    this.cameras.main.setBounds(0, 0, this.levelData.world.width, this.levelData.world.height);
+    this.cameras.main.startFollow(this.player)
+
     // goal
     this.goal = this.add.sprite(this.levelData.goal.x, this.levelData.goal.y, 'goal');
     this.physics.add.existing(this.goal);
-
-    this.load.image('base', './assets/image/base.png');
-    this.load.image('thumb', './assets/image/thumb.png');
-    this.load.plugin('rex-virtual-joystick-plugin"', VirtualJoyStickPlugin, true);
-
+ 
   }
 
   createVirtualJoystick() {
-    this.joyStick = this.plugins.get('rex-virtual-joystick-plugin"').add(
+    this.virtualJoyStickPlugin = this.virtualJoyStickPlugin || this.plugins.get('virtual-joystick-plugin');
+    this.joyStick = this.virtualJoyStickPlugin.add(
         this,
         Object.assign({}, this.joystickConfig, {
             radius: 32,
@@ -279,6 +314,39 @@ export class MainScene extends Scene {
         this.joyStick.thumb.x = this.staticXJsPos;
         this.joyStick.thumb.y = this.staticYJsPos;
     });
+  }
+
+  setupBarrels() {
+    this.barrels = this.physics.add.group({
+      bounceY: 0.1,
+      bounceX: 1,
+      collideWorldBounds: true
+    });
+    this.time.addEvent({
+      delay: this.levelData.spawner.interval,
+      loop: true,
+      callbackScope: this,
+      callback: () => {
+        const barrel = this.barrels.get(this.goal.x, this.goal.y, 'barrel');
+        barrel.setActive(true);
+        barrel.setVisible(true);
+        barrel.body.enable = true;
+        this.barrelSound.play();
+        barrel.setVelocityX(this.levelData.spawner.spped);
+
+        this.time.addEvent({
+          delay: this.levelData.spawner.lifesoan,
+          repeat: 0,
+          callbackScope: this,
+          callback: () => {
+            this.barrels.killAndHide(barrel);
+            barrel.body.enable = false;
+          }
+        });
+
+      }
+    });
+
   }
 
   update() {
