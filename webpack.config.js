@@ -41,7 +41,7 @@ module.exports = {
   devServer: {
     contentBase: Path.resolve(__dirname, "public"),
     publicPath: Path.resolve(__dirname, "/js/"),
-    host: "127.0.0.1",
+    host: "0.0.0.0",
     port: 3000,
     open: true,
     watchContentBase: true,
