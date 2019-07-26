@@ -2,9 +2,9 @@
 
 A simple Mario style platform barrel jumper game.
 
-**Demo:** http://virtualpet.leandrocurioso.com
+**Demo:** http://barreljumper.leandrocurioso.com
 
-![alt Demo](https://raw.githubusercontent.com/leandrocurioso/virtual-pet-html5-game/master/demo.png)
+![alt Demo](https://raw.githubusercontent.com/leandrocurioso/barrel-jumper-html5-game/master/demo.png)
 
 ### Structure
 The code must be written is ES6 then Webpack will automatically transpile it to ES5 to ensure browser compatibility.
